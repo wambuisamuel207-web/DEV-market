@@ -1,0 +1,6 @@
+{
+  "name": "DevMarket",
+  "description": "Developer marketplace with milestone escrow and delayed disbursement payments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
