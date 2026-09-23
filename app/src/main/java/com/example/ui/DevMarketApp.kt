@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.ExitToApp
@@ -28,12 +30,16 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -168,7 +174,8 @@ fun DevMarketApp(
     val activeDisputeProject = disputeLogs.firstOrNull()?.projectId ?: "proj_2"
     val disputeMessages by viewModel.getProjectMessages(activeDisputeProject).collectAsStateWithLifecycle(emptyList())
 
-    var showProfileMenu by remember { mutableStateOf(false) }
+    var showAccountManagementDialog by remember { mutableStateOf(false) }
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Slate950,
@@ -182,7 +189,7 @@ fun DevMarketApp(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -193,7 +200,7 @@ fun DevMarketApp(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
+                                .size(32.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF0F172A))
                                 .border(1.dp, Emerald500, RoundedCornerShape(8.dp)),
@@ -203,71 +210,122 @@ fun DevMarketApp(
                                 imageVector = Icons.Default.Security,
                                 contentDescription = "DevMarket Logo",
                                 tint = Emerald500,
-                                modifier = Modifier.size(17.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "DevMarket",
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 17.sp
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(Emerald500)
-                        )
-                    }
-
-                    // Sleek Profile & Perspective Pill Button (replaces cluttered top switcher bar)
-                    Surface(
-                        color = Slate800,
-                        shape = RoundedCornerShape(20.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
-                        modifier = Modifier
-                            .clickable { showProfileMenu = true }
-                            .testTag("user_profile_pill")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        when (currentUser.role) {
-                                            "client" -> Color(0xFF0284C7)
-                                            "developer" -> Emerald500
-                                            "admin" -> Color(0xFF7C3AED)
-                                            else -> Slate400
-                                        }
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = currentUser.fullName.first().toString(),
+                                    text = "DevMarket",
                                     color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(Emerald500)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = currentUser.fullName.split(" ").first(),
-                                color = Slate200,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
+                                text = "Delayed Disbursement Escrow",
+                                color = Slate400,
+                                fontSize = 9.sp
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                    }
+
+                    // Direct Navigation Icons: Account Management, Settings, Logout
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // 1. Account Management Pill / Button
+                        Surface(
+                            color = Slate800,
+                            shape = RoundedCornerShape(18.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                            modifier = Modifier
+                                .clickable { showAccountManagementDialog = true }
+                                .testTag("nav_account_button")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when (currentUser.role) {
+                                                "client" -> Color(0xFF0284C7)
+                                                "developer" -> Emerald500
+                                                "admin" -> Color(0xFF7C3AED)
+                                                else -> Slate400
+                                            }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = currentUser.fullName.first().toString(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = currentUser.fullName.split(" ").first(),
+                                    color = Slate200,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Account Options",
+                                    tint = Slate400,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+
+                        // 2. Settings Navigation Icon Button
+                        IconButton(
+                            onClick = { viewModel.showSettingsDialog() },
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Slate800)
+                                .border(1.dp, Slate700, RoundedCornerShape(8.dp))
+                                .testTag("nav_settings_button")
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Profile Menu",
-                                tint = Slate400,
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Platform Settings",
+                                tint = Slate300,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        // 3. Logout Navigation Icon Button
+                        IconButton(
+                            onClick = { showLogoutConfirmDialog = true },
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Slate800)
+                                .border(1.dp, Slate700, RoundedCornerShape(8.dp))
+                                .testTag("nav_logout_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ExitToApp,
+                                contentDescription = "Sign Out",
+                                tint = Rose500,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -432,7 +490,10 @@ fun DevMarketApp(
                     onOpenDispute = { viewModel.showDisputeDialog(it) },
                     onSubmitDeliverable = { viewModel.showDeliverableDialog(it) },
                     onToggleFeeCalculation = { viewModel.toggleFeeCalculationPopover(it) },
-                    onNewProject = { viewModel.showNewProjectDialog() }
+                    onNewProject = { viewModel.showNewProjectDialog() },
+                    onOpenSettings = { viewModel.showSettingsDialog() },
+                    onOpenAccountManagement = { showAccountManagementDialog = true },
+                    onLogout = { showLogoutConfirmDialog = true }
                 )
 
                 1 -> ClientDashboardScreen(
@@ -635,10 +696,11 @@ fun DevMarketApp(
                 )
             }
 
-            // Profile & Perspective Switcher Menu Modal
-            if (showProfileMenu && currentUser != null) {
-                ProfileMenuDialog(
+            // Account Management & Perspective Switcher Modal
+            if (showAccountManagementDialog && currentUser != null) {
+                AccountManagementDialog(
                     currentUser = currentUser,
+                    users = users,
                     activeRole = uiState.activeRole,
                     onRoleSelected = { role ->
                         viewModel.selectRole(role)
@@ -648,9 +710,27 @@ fun DevMarketApp(
                             UserRole.ADMIN -> 3
                         }
                     },
+                    onSwitchAccount = { user ->
+                        viewModel.quickLogin(user)
+                    },
                     onOpenSettings = { viewModel.showSettingsDialog() },
-                    onLogout = { viewModel.logout() },
-                    onDismiss = { showProfileMenu = false }
+                    onLogout = {
+                        showLogoutConfirmDialog = true
+                    },
+                    onDismiss = { showAccountManagementDialog = false }
+                )
+            }
+
+            // Direct Logout Confirmation Dialog
+            if (showLogoutConfirmDialog && currentUser != null) {
+                LogoutConfirmationDialog(
+                    userName = currentUser.fullName,
+                    onConfirmLogout = {
+                        showLogoutConfirmDialog = false
+                        showAccountManagementDialog = false
+                        viewModel.logout()
+                    },
+                    onDismiss = { showLogoutConfirmDialog = false }
                 )
             }
         }
@@ -658,10 +738,12 @@ fun DevMarketApp(
 }
 
 @Composable
-fun ProfileMenuDialog(
+fun AccountManagementDialog(
     currentUser: com.example.data.model.User,
+    users: List<com.example.data.model.User>,
     activeRole: com.example.ui.viewmodel.UserRole,
     onRoleSelected: (com.example.ui.viewmodel.UserRole) -> Unit,
+    onSwitchAccount: (com.example.data.model.User) -> Unit,
     onOpenSettings: () -> Unit,
     onLogout: () -> Unit,
     onDismiss: () -> Unit
@@ -679,72 +761,107 @@ fun ProfileMenuDialog(
                 modifier = Modifier.padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // User Details Header
+                // Header with Account Title and Close icon
                 Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when (currentUser.role) {
-                                    "client" -> Color(0xFF0284C7)
-                                    "developer" -> Emerald500
-                                    "admin" -> Color(0xFF7C3AED)
-                                    else -> Slate400
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = currentUser.fullName.first().toString(),
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = Emerald500,
+                            modifier = Modifier.size(20.dp)
                         )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = currentUser.fullName,
+                            text = "Account Management",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
-                        Text(
-                            text = currentUser.email,
-                            color = Slate400,
-                            fontSize = 11.sp
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Slate400,
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Surface(
-                            color = Emerald500.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(4.dp)
+                    }
+                }
+
+                // User Details Card
+                Surface(
+                    color = Slate800.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate700.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when (currentUser.role) {
+                                        "client" -> Color(0xFF0284C7)
+                                        "developer" -> Emerald500
+                                        "admin" -> Color(0xFF7C3AED)
+                                        else -> Slate400
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "PayPal Verified • ${currentUser.role.uppercase()}",
-                                color = Emerald500,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                text = currentUser.fullName.first().toString(),
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
                             )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = currentUser.fullName,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = currentUser.email,
+                                color = Slate400,
+                                fontSize = 11.sp
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Surface(
+                                color = Emerald500.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = "PayPal Verified • ${currentUser.role.uppercase()} • Escrow Secured",
+                                    color = Emerald500,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(Slate800)
-                )
-
-                // Role Perspective (if admin, or for multi-role testing)
+                // Active Perspective Switcher
                 Column {
                     Text(
-                        text = "ACTIVE PERSPECTIVE",
+                        text = "ROLE PERSPECTIVE",
                         color = Slate400,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
@@ -806,6 +923,61 @@ fun ProfileMenuDialog(
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(vertical = 8.dp)
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // Quick Demo Account Switcher
+                if (users.size > 1) {
+                    Column {
+                        Text(
+                            text = "SWITCH ACCOUNT (DEMO PROFILES)",
+                            color = Slate400,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            users.take(3).forEach { user ->
+                                val isCurrent = user.id == currentUser.id
+                                Surface(
+                                    color = if (isCurrent) Emerald500.copy(alpha = 0.15f) else Slate800,
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isCurrent) Emerald500 else Slate700
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            if (!isCurrent) {
+                                                onSwitchAccount(user)
+                                                onDismiss()
+                                            }
+                                        }
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = user.fullName.split(" ").first(),
+                                            color = if (isCurrent) Emerald500 else Slate300,
+                                            fontSize = 10.sp,
+                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = user.role.capitalize(java.util.Locale.ROOT),
+                                            color = Slate400,
+                                            fontSize = 9.sp
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -877,6 +1049,90 @@ fun ProfileMenuDialog(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Sign Out", color = Rose500, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LogoutConfirmationDialog(
+    userName: String,
+    onConfirmLogout: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            color = Slate900,
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Rose500.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Sign Out",
+                            tint = Rose500,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Sign Out of DevMarket?",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = userName,
+                            color = Slate400,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Are you sure you want to end your current session? All funded milestones and escrow guarantees remain securely recorded.",
+                    color = Slate300,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate300)
+                    ) {
+                        Text("Cancel", fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = onConfirmLogout,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Rose500)
+                    ) {
+                        Text("Sign Out", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }

@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Check
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -120,6 +123,9 @@ fun ProjectDashboardScreen(
     onSubmitDeliverable: (Milestone) -> Unit,
     onToggleFeeCalculation: (Milestone?) -> Unit,
     onNewProject: () -> Unit,
+    onOpenSettings: () -> Unit = {},
+    onOpenAccountManagement: () -> Unit = {},
+    onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var activeFilter by remember { mutableStateOf(MilestoneFilter.ALL) }
@@ -172,17 +178,17 @@ fun ProjectDashboardScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Clean Header & Action Bar
+            // Refined Header & Direct Navigation Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = activeProject?.title ?: "Milestones Pipeline",
+                        text = activeProject?.title ?: "Projects Dashboard",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color.White
                     )
@@ -193,17 +199,216 @@ fun ProjectDashboardScreen(
                     )
                 }
 
-                if (currentUser.role == "client" || currentUser.role == "admin") {
-                    Button(
-                        onClick = onNewProject,
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.testTag("dashboard_new_project_button")
+                // Dedicated Quick Navigation Icons: Settings, Logout, Account Management
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Account Management icon button
+                    IconButton(
+                        onClick = onOpenAccountManagement,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Slate900)
+                            .border(1.dp, Slate800, RoundedCornerShape(8.dp))
+                            .testTag("dashboard_account_button")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Project", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Account Management",
+                            tint = when (currentUser.role) {
+                                "client" -> Color(0xFF38BDF8)
+                                "developer" -> Emerald500
+                                "admin" -> Color(0xFFA78BFA)
+                                else -> Slate300
+                            },
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Settings navigation icon button
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Slate900)
+                            .border(1.dp, Slate800, RoundedCornerShape(8.dp))
+                            .testTag("dashboard_settings_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Platform Settings",
+                            tint = Slate300,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    // Logout navigation icon button
+                    IconButton(
+                        onClick = onLogout,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Slate900)
+                            .border(1.dp, Slate800, RoundedCornerShape(8.dp))
+                            .testTag("dashboard_logout_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Sign Out",
+                            tint = Rose500,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    // New Project action button (for clients and admins)
+                    if (currentUser.role == "client" || currentUser.role == "admin") {
+                        Button(
+                            onClick = onNewProject,
+                            colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("dashboard_new_project_button")
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Refined User Perspective & Navigation Ribbon
+        item {
+            Surface(
+                color = Slate900,
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // User Perspective indicator
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { onOpenAccountManagement() }
+                            .weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when (currentUser.role) {
+                                        "client" -> Color(0xFF0284C7)
+                                        "developer" -> Emerald500
+                                        "admin" -> Color(0xFF7C3AED)
+                                        else -> Slate400
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = currentUser.fullName.first().toString(),
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = currentUser.fullName,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    color = when (currentUser.role) {
+                                        "client" -> Color(0xFF0284C7).copy(alpha = 0.2f)
+                                        "developer" -> Emerald500.copy(alpha = 0.2f)
+                                        "admin" -> Color(0xFF7C3AED).copy(alpha = 0.2f)
+                                        else -> Slate700
+                                    },
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "${currentUser.role.uppercase()} PERSPECTIVE",
+                                        color = when (currentUser.role) {
+                                            "client" -> Color(0xFF38BDF8)
+                                            "developer" -> Emerald500
+                                            "admin" -> Color(0xFFA78BFA)
+                                            else -> Slate300
+                                        },
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "PayPal Delayed Disbursement Active • 10% Fee",
+                                color = Slate400,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+
+                    // Quick navigation pill buttons
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Surface(
+                            color = Slate800,
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.clickable { onOpenAccountManagement() }
+                        ) {
+                            Text(
+                                text = "Account",
+                                color = Slate300,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                        Surface(
+                            color = Slate800,
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.clickable { onOpenSettings() }
+                        ) {
+                            Text(
+                                text = "Settings",
+                                color = Slate300,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                        Surface(
+                            color = Rose500.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.clickable { onLogout() }
+                        ) {
+                            Text(
+                                text = "Logout",
+                                color = Rose500,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
                     }
                 }
             }
