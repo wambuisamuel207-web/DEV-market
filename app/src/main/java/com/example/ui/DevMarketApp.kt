@@ -2,6 +2,7 @@ package com.example.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +20,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,8 +54,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
@@ -162,17 +168,17 @@ fun DevMarketApp(
     val activeDisputeProject = disputeLogs.firstOrNull()?.projectId ?: "proj_2"
     val disputeMessages by viewModel.getProjectMessages(activeDisputeProject).collectAsStateWithLifecycle(emptyList())
 
+    var showProfileMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = Slate950,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Slate900)
-                    .border(width = 0.5.dp, color = Slate800)
+            Surface(
+                color = Slate900,
+                border = androidx.compose.foundation.BorderStroke(width = 0.5.dp, color = Slate800),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Main App Branding Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -180,10 +186,14 @@ fun DevMarketApp(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Clean Brand Identity
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { selectedTab = 0 }
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(30.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF0F172A))
                                 .border(1.dp, Emerald500, RoundedCornerShape(8.dp)),
@@ -193,150 +203,76 @@ fun DevMarketApp(
                                 imageVector = Icons.Default.Security,
                                 contentDescription = "DevMarket Logo",
                                 tint = Emerald500,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "DevMarket",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 17.sp
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    color = Emerald500.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text(
-                                        text = "ESCROW",
-                                        color = Emerald500,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 9.sp,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "PayPal Delayed Disbursement System",
-                                color = Slate400,
-                                fontSize = 10.sp
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "DevMarket",
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 17.sp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Emerald500)
+                        )
                     }
 
-                    // Active User Badge and Logout Button
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    // Sleek Profile & Perspective Pill Button (replaces cluttered top switcher bar)
+                    Surface(
+                        color = Slate800,
+                        shape = RoundedCornerShape(20.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                        modifier = Modifier
+                            .clickable { showProfileMenu = true }
+                            .testTag("user_profile_pill")
                     ) {
-                        Surface(
-                            color = Slate800,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.border(1.dp, Slate700, RoundedCornerShape(12.dp))
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(18.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            when (currentUser.role) {
-                                                "client" -> Color(0xFF0284C7)
-                                                "developer" -> Emerald500
-                                                "admin" -> Color(0xFF7C3AED)
-                                                else -> Slate400
-                                            }
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = currentUser.fullName.first().toString(),
-                                        color = Color.White,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Column {
-                                    Text(
-                                        text = currentUser.fullName.split(" ").first(),
-                                        color = Slate200,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = currentUser.role.uppercase(),
-                                        color = when (currentUser.role) {
-                                            "client" -> Color(0xFF38BDF8)
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        when (currentUser.role) {
+                                            "client" -> Color(0xFF0284C7)
                                             "developer" -> Emerald500
-                                            "admin" -> Color(0xFFA78BFA)
+                                            "admin" -> Color(0xFF7C3AED)
                                             else -> Slate400
-                                        },
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                }
+                                        }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = currentUser.fullName.first().toString(),
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
-                        }
-
-                        // Settings action icon button
-                        IconButton(
-                            onClick = { viewModel.showSettingsDialog() },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Slate800)
-                                .border(1.dp, Slate700, RoundedCornerShape(8.dp))
-                                .testTag("settings_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Platform Settings",
-                                tint = Slate300,
-                                modifier = Modifier.size(16.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = currentUser.fullName.split(" ").first(),
+                                color = Slate200,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
-                        }
-
-                        // Logout action icon button
-                        IconButton(
-                            onClick = { viewModel.logout() },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Slate800)
-                                .border(1.dp, Slate700, RoundedCornerShape(8.dp))
-                                .testTag("logout_button")
-                        ) {
+                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(
-                                imageVector = Icons.Default.ExitToApp,
-                                contentDescription = "Sign Out",
-                                tint = Slate300,
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Profile Menu",
+                                tint = Slate400,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     }
                 }
-
-                // Global Role Switcher Pill Bar (filtered by current user permissions)
-                RoleSwitcherBar(
-                    currentRole = uiState.activeRole,
-                    userRole = currentUser.role,
-                    onRoleSelected = { role ->
-                        viewModel.selectRole(role)
-                        selectedTab = when (role) {
-                            UserRole.CLIENT -> 1
-                            UserRole.DEVELOPER -> 2
-                            UserRole.ADMIN -> 3
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                )
             }
         },
         bottomBar = {
@@ -347,7 +283,7 @@ fun DevMarketApp(
                     .border(width = 0.5.dp, color = Slate800)
                     .testTag("bottom_nav_bar")
             ) {
-                // Projects Dashboard tab (Always visible to all authenticated users)
+                // 1. Projects Dashboard tab (Always visible to all authenticated users)
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
@@ -363,8 +299,45 @@ fun DevMarketApp(
                     modifier = Modifier.testTag("nav_item_projects")
                 )
 
-                // Client tab (visible to client and admin)
-                if (currentUser.role == "client" || isCurrentUserAdmin) {
+                // 2. Role-tailored Workspace / Hub Tab
+                if (currentUser.role == "client") {
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = {
+                            selectedTab = 1
+                            viewModel.selectRole(UserRole.CLIENT)
+                        },
+                        icon = { Icon(Icons.Default.Person, contentDescription = "Client Hub") },
+                        label = { Text("Client Hub", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            selectedTextColor = Color(0xFF38BDF8),
+                            indicatorColor = Color(0xFF0284C7),
+                            unselectedIconColor = Slate400,
+                            unselectedTextColor = Slate400
+                        ),
+                        modifier = Modifier.testTag("nav_item_client")
+                    )
+                } else if (currentUser.role == "developer") {
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = {
+                            selectedTab = 2
+                            viewModel.selectRole(UserRole.DEVELOPER)
+                        },
+                        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Dev Hub") },
+                        label = { Text("Dev Hub", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            selectedTextColor = Emerald500,
+                            indicatorColor = Emerald600,
+                            unselectedIconColor = Slate400,
+                            unselectedTextColor = Slate400
+                        ),
+                        modifier = Modifier.testTag("nav_item_developer")
+                    )
+                } else if (isCurrentUserAdmin) {
+                    // For Admin: Client Hub, Developer Hub, Admin Desk
                     NavigationBarItem(
                         selected = selectedTab == 1,
                         onClick = {
@@ -382,10 +355,7 @@ fun DevMarketApp(
                         ),
                         modifier = Modifier.testTag("nav_item_client")
                     )
-                }
 
-                // Developer tab (visible to developer and admin)
-                if (currentUser.role == "developer" || isCurrentUserAdmin) {
                     NavigationBarItem(
                         selected = selectedTab == 2,
                         onClick = {
@@ -393,7 +363,7 @@ fun DevMarketApp(
                             viewModel.selectRole(UserRole.DEVELOPER)
                         },
                         icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Developer") },
-                        label = { Text("Developer", fontSize = 11.sp) },
+                        label = { Text("Dev", fontSize = 11.sp) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color.White,
                             selectedTextColor = Emerald500,
@@ -403,11 +373,7 @@ fun DevMarketApp(
                         ),
                         modifier = Modifier.testTag("nav_item_developer")
                     )
-                }
 
-                // Admin tab: STRICTLY VISIBLE ONLY TO ADMIN USERS
-                // Developers and clients must NOT access or see the admin tab!
-                if (isCurrentUserAdmin) {
                     NavigationBarItem(
                         selected = selectedTab == 3,
                         onClick = {
@@ -427,7 +393,7 @@ fun DevMarketApp(
                     )
                 }
 
-                // Escrow Ledger tab (visible to all authenticated roles)
+                // 3. Escrow Ledger tab (visible to all authenticated roles)
                 NavigationBarItem(
                     selected = selectedTab == 4,
                     onClick = { selectedTab = 4 },
@@ -667,6 +633,252 @@ fun DevMarketApp(
                     documentType = uiState.activeLegalDocType,
                     onClose = { viewModel.dismissLegalDialog() }
                 )
+            }
+
+            // Profile & Perspective Switcher Menu Modal
+            if (showProfileMenu && currentUser != null) {
+                ProfileMenuDialog(
+                    currentUser = currentUser,
+                    activeRole = uiState.activeRole,
+                    onRoleSelected = { role ->
+                        viewModel.selectRole(role)
+                        selectedTab = when (role) {
+                            UserRole.CLIENT -> 1
+                            UserRole.DEVELOPER -> 2
+                            UserRole.ADMIN -> 3
+                        }
+                    },
+                    onOpenSettings = { viewModel.showSettingsDialog() },
+                    onLogout = { viewModel.logout() },
+                    onDismiss = { showProfileMenu = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileMenuDialog(
+    currentUser: com.example.data.model.User,
+    activeRole: com.example.ui.viewmodel.UserRole,
+    onRoleSelected: (com.example.ui.viewmodel.UserRole) -> Unit,
+    onOpenSettings: () -> Unit,
+    onLogout: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            color = Slate900,
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // User Details Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when (currentUser.role) {
+                                    "client" -> Color(0xFF0284C7)
+                                    "developer" -> Emerald500
+                                    "admin" -> Color(0xFF7C3AED)
+                                    else -> Slate400
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = currentUser.fullName.first().toString(),
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = currentUser.fullName,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                        Text(
+                            text = currentUser.email,
+                            color = Slate400,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Surface(
+                            color = Emerald500.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = "PayPal Verified • ${currentUser.role.uppercase()}",
+                                color = Emerald500,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Slate800)
+                )
+
+                // Role Perspective (if admin, or for multi-role testing)
+                Column {
+                    Text(
+                        text = "ACTIVE PERSPECTIVE",
+                        color = Slate400,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val availableRoles = if (currentUser.role == "admin") {
+                            listOf(
+                                com.example.ui.viewmodel.UserRole.CLIENT,
+                                com.example.ui.viewmodel.UserRole.DEVELOPER,
+                                com.example.ui.viewmodel.UserRole.ADMIN
+                            )
+                        } else {
+                            listOf(
+                                if (currentUser.role == "developer")
+                                    com.example.ui.viewmodel.UserRole.DEVELOPER
+                                else
+                                    com.example.ui.viewmodel.UserRole.CLIENT
+                            )
+                        }
+
+                        availableRoles.forEach { role ->
+                            val isSelected = activeRole == role
+                            Surface(
+                                color = if (isSelected) {
+                                    when (role) {
+                                        com.example.ui.viewmodel.UserRole.CLIENT -> Color(0xFF0284C7).copy(alpha = 0.25f)
+                                        com.example.ui.viewmodel.UserRole.DEVELOPER -> Emerald500.copy(alpha = 0.25f)
+                                        com.example.ui.viewmodel.UserRole.ADMIN -> Color(0xFF7C3AED).copy(alpha = 0.25f)
+                                    }
+                                } else Slate800,
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isSelected) {
+                                        when (role) {
+                                            com.example.ui.viewmodel.UserRole.CLIENT -> Color(0xFF38BDF8)
+                                            com.example.ui.viewmodel.UserRole.DEVELOPER -> Emerald500
+                                            com.example.ui.viewmodel.UserRole.ADMIN -> Color(0xFFA78BFA)
+                                        }
+                                    } else Slate700
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        onRoleSelected(role)
+                                        onDismiss()
+                                    }
+                                    .testTag("role_button_${role.name.lowercase()}")
+                            ) {
+                                Text(
+                                    text = role.label,
+                                    color = if (isSelected) Color.White else Slate300,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Slate800)
+                )
+
+                // Actions: Settings & Logout
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        color = Slate800,
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                onDismiss()
+                                onOpenSettings()
+                            }
+                            .testTag("settings_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = null,
+                                tint = Slate300,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Settings", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    Surface(
+                        color = Rose500.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Rose500.copy(alpha = 0.4f)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                onDismiss()
+                                onLogout()
+                            }
+                            .testTag("logout_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.ExitToApp,
+                                contentDescription = null,
+                                tint = Rose500,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Sign Out", color = Rose500, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
     }

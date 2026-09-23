@@ -125,6 +125,7 @@ fun ProjectDashboardScreen(
     var activeFilter by remember { mutableStateOf(MilestoneFilter.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var isProjectDetailsExpanded by remember { mutableStateOf(false) }
+    var isSecurityBannerVisible by remember { mutableStateOf(true) }
 
     // Filter milestones based on selected project
     val projectFilteredMilestones = if (selectedProjectId != null) {
@@ -168,56 +169,25 @@ fun ProjectDashboardScreen(
             .background(Slate950)
             .padding(horizontal = 16.dp)
             .testTag("project_dashboard_screen"),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // Screen Header & Action Bar
+            // Clean Header & Action Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Project Dashboard",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            color = when (activeRole) {
-                                UserRole.CLIENT -> Color(0xFF0284C7).copy(alpha = 0.2f)
-                                UserRole.DEVELOPER -> Emerald500.copy(alpha = 0.2f)
-                                UserRole.ADMIN -> Color(0xFF7C3AED).copy(alpha = 0.2f)
-                            },
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                when (activeRole) {
-                                    UserRole.CLIENT -> Color(0xFF38BDF8).copy(alpha = 0.5f)
-                                    UserRole.DEVELOPER -> Emerald500.copy(alpha = 0.5f)
-                                    UserRole.ADMIN -> Color(0xFFA78BFA).copy(alpha = 0.5f)
-                                }
-                            )
-                        ) {
-                            Text(
-                                text = "${activeRole.label} View",
-                                color = when (activeRole) {
-                                    UserRole.CLIENT -> Color(0xFF38BDF8)
-                                    UserRole.DEVELOPER -> Emerald500
-                                    UserRole.ADMIN -> Color(0xFFA78BFA)
-                                },
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
                     Text(
-                        text = "Active milestone tracking, escrow delivery & status verification",
+                        text = activeProject?.title ?: "Milestones Pipeline",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                    Text(
+                        text = "${displayedMilestones.size} milestones • \$${totalEscrowSecured.toInt()} locked in escrow",
                         color = Slate400,
                         fontSize = 11.sp
                     )
@@ -227,105 +197,122 @@ fun ProjectDashboardScreen(
                     Button(
                         onClick = onNewProject,
                         colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         modifier = Modifier.testTag("dashboard_new_project_button")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Project", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("New Project", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
         }
 
-        // Trust & Delayed Disbursement Guarantee Banner
-        item {
-            EscrowTrustNotice()
-        }
-
-        // High-level summary metrics cards
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Escrow Value Card
+        // Sleek, compact security strip (dismissible)
+        if (isSecurityBannerVisible) {
+            item {
                 Surface(
                     color = Slate900,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .border(1.dp, Emerald600.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Emerald700.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = Emerald500, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("In Escrow", fontSize = 10.sp, color = Slate400, fontWeight = FontWeight.Medium)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Security,
+                                contentDescription = null,
+                                tint = Emerald500,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "PayPal Delayed Disbursement Active • 10% Platform Fee",
+                                fontSize = 11.sp,
+                                color = Color(0xFFD1FAE5)
+                            )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Dismiss",
+                            tint = Slate500,
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clickable { isSecurityBannerVisible = false }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Streamlined high-level summary metrics bar
+        item {
+            Surface(
+                color = Slate900,
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Escrow Metric
+                    Column {
+                        Text("IN ESCROW", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Slate400)
                         Text(
                             text = "\$${totalEscrowSecured.toInt()}",
-                            fontSize = 18.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Emerald500
                         )
-                        Text("Delayed disbursement", fontSize = 9.sp, color = Slate500)
                     }
-                }
+                    Box(modifier = Modifier.width(1.dp).height(20.dp).background(Slate800))
 
-                // Under Review Card
-                Surface(
-                    color = Slate900,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .border(
-                            1.dp,
-                            if (totalUnderReviewCount > 0) Amber500.copy(alpha = 0.5f) else Slate800,
-                            RoundedCornerShape(12.dp)
-                        )
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.HourglassTop, contentDescription = null, tint = Amber500, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("In Review", fontSize = 10.sp, color = Slate400, fontWeight = FontWeight.Medium)
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
+                    // In Review Metric
+                    Column {
+                        Text("IN REVIEW", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Slate400)
                         Text(
                             text = "$totalUnderReviewCount",
-                            fontSize = 18.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = if (totalUnderReviewCount > 0) Amber500 else Color.White
                         )
-                        Text("Awaiting client check", fontSize = 9.sp, color = Slate500)
                     }
-                }
+                    Box(modifier = Modifier.width(1.dp).height(20.dp).background(Slate800))
 
-                // Active Milestones Count
-                Surface(
-                    color = Slate900,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .border(1.dp, Slate800, RoundedCornerShape(12.dp))
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Assignment, contentDescription = null, tint = PayPalSky, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Active Tasks", fontSize = 10.sp, color = Slate400, fontWeight = FontWeight.Medium)
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
+                    // Active Tasks Metric
+                    Column {
+                        Text("ACTIVE TASKS", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Slate400)
                         Text(
                             text = "$totalActiveMilestones",
-                            fontSize = 18.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White
                         )
-                        Text("$totalReleasedCount completed", fontSize = 9.sp, color = Slate500)
+                    }
+                    Box(modifier = Modifier.width(1.dp).height(20.dp).background(Slate800))
+
+                    // Completed Metric
+                    Column {
+                        Text("RELEASED", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Slate400)
+                        Text(
+                            text = "$totalReleasedCount",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            color = PayPalSky
+                        )
                     }
                 }
             }
