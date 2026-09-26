@@ -40,8 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.ui.theme.ButtonYellow
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.Emerald600
+import com.example.ui.theme.OnButtonYellow
 import com.example.ui.theme.PayPalSky
 import com.example.ui.theme.Slate200
 import com.example.ui.theme.Slate300
@@ -209,13 +211,13 @@ fun LegalDocumentModal(
 
                 Button(
                     onClick = onClose,
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
                 ) {
-                    Text("I Understand & Acknowledge", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("I Understand & Acknowledge", color = OnButtonYellow, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
         }

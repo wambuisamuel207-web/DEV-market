@@ -39,3 +39,11 @@ val PayPalSky = Color(0xFF0079C1)
 val Rose500 = Color(0xFFF43F5E)
 val Rose100 = Color(0xFFFFE4E6)
 val Rose700 = Color(0xFFBE123C)
+
+// Modern High-Contrast Yellow Palette for Buttons & Actions
+val ButtonYellow = Color(0xFFFACC15) // Vibrant gold yellow (primary button fill)
+val ButtonYellowHover = Color(0xFFEAB308) // Warm amber yellow
+val ButtonYellowDark = Color(0xFFCA8A04) // Deep gold yellow
+val ButtonYellowContainer = Color(0xFFFEF08A) // Soft yellow container
+val OnButtonYellow = Color(0xFF0F172A) // High-contrast dark slate text on yellow
+

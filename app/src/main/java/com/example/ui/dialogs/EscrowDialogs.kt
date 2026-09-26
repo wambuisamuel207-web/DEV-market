@@ -58,8 +58,10 @@ import com.example.data.model.DisputeLog
 import com.example.data.model.Milestone
 import com.example.data.repository.DisputeResolutionType
 import com.example.ui.theme.Amber500
+import com.example.ui.theme.ButtonYellow
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.Emerald600
+import com.example.ui.theme.OnButtonYellow
 import com.example.ui.theme.PayPalBlue
 import com.example.ui.theme.PayPalSky
 import com.example.ui.theme.Rose500
@@ -214,19 +216,19 @@ fun FundEscrowModal(
                 // Actions
                 Button(
                     onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(containerColor = PayPalSky),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .testTag("confirm_fund_escrow_button")
                 ) {
-                    Icon(Icons.Default.Security, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Security, contentDescription = null, tint = OnButtonYellow, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Approve \$${milestone.amount.toInt()} with PayPal",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = OnButtonYellow
                     )
                 }
 
@@ -340,14 +342,14 @@ fun SubmitDeliverablesModal(
                         val finalUrl = if (url.isBlank()) "https://github.com/project/releases/tag/v1.0" else url
                         onSubmit(finalNote, finalUrl)
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .testTag("submit_work_button")
                 ) {
-                    Text("Submit for Client Review", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Submit for Client Review", fontWeight = FontWeight.Bold, color = OnButtonYellow)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -545,14 +547,14 @@ fun ReleasePaymentModal(
 
                 Button(
                     onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .testTag("confirm_release_button")
                 ) {
-                    Text("Authorize Disbursement Now", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Authorize Disbursement Now", fontWeight = FontWeight.Bold, color = OnButtonYellow)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1124,14 +1126,14 @@ fun CreateProjectModal(
                         )
                         onCreate(finalTitle, "Custom software development project", milestones)
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .testTag("submit_create_project_button")
                 ) {
-                    Text("Publish Project & Setup Escrows", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Publish Project & Setup Escrows", fontWeight = FontWeight.Bold, color = OnButtonYellow)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

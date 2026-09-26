@@ -239,6 +239,22 @@ class DevMarketRepository(
         )
     }
 
+    suspend fun updateUserPayPalDetails(
+        userId: String,
+        email: String,
+        merchantId: String?,
+        connected: Boolean
+    ) {
+        val user = dao.getUserById(userId).firstOrNull() ?: return
+        dao.updateUser(
+            user.copy(
+                email = email.trim(),
+                paypalMerchantId = merchantId?.trim(),
+                paypalConnected = connected
+            )
+        )
+    }
+
     suspend fun createNewProject(
         clientId: String,
         developerId: String,

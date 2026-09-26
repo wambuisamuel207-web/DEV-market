@@ -21,10 +21,12 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
@@ -72,11 +74,13 @@ import androidx.compose.material3.IconButton
 import com.example.ui.components.RoleSwitcherBar
 import com.example.ui.screens.LoginScreen
 import com.example.ui.dialogs.AdminResolutionModal
+import com.example.ui.dialogs.CommunicationPortalDialog
 import com.example.ui.dialogs.CreateProjectModal
 import com.example.ui.dialogs.DocumentType
 import com.example.ui.dialogs.FundEscrowModal
 import com.example.ui.dialogs.LegalDocumentModal
 import com.example.ui.dialogs.OpenDisputeModal
+import com.example.ui.dialogs.PayPalDetailsDialog
 import com.example.ui.dialogs.PayPalOnboardingModal
 import com.example.ui.dialogs.ReleasePaymentModal
 import com.example.ui.dialogs.RequestRevisionModal
@@ -87,8 +91,11 @@ import com.example.ui.screens.ClientDashboardScreen
 import com.example.ui.screens.DeveloperDashboardScreen
 import com.example.ui.screens.EscrowLedgerScreen
 import com.example.ui.screens.ProjectDashboardScreen
+import com.example.ui.theme.ButtonYellow
+import com.example.ui.theme.ButtonYellowHover
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.Emerald600
+import com.example.ui.theme.OnButtonYellow
 import com.example.ui.theme.PayPalBlue
 import com.example.ui.theme.PayPalSky
 import com.example.ui.theme.Rose500
@@ -174,16 +181,22 @@ fun DevMarketApp(
     val activeDisputeProject = disputeLogs.firstOrNull()?.projectId ?: "proj_2"
     val disputeMessages by viewModel.getProjectMessages(activeDisputeProject).collectAsStateWithLifecycle(emptyList())
 
+    val activePortalProjectId = uiState.communicationPortalProjectId ?: uiState.selectedProjectId ?: "proj_1"
+    val communicationMessages by viewModel.getProjectMessages(activePortalProjectId).collectAsStateWithLifecycle(emptyList())
+
     var showAccountManagementDialog by remember { mutableStateOf(false) }
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = Slate950,
+        containerColor = if (uiState.isDarkMode) Slate950 else Color(0xFFF8FAFC),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Surface(
-                color = Slate900,
-                border = androidx.compose.foundation.BorderStroke(width = 0.5.dp, color = Slate800),
+                color = if (uiState.isDarkMode) Slate900 else Color.White,
+                border = androidx.compose.foundation.BorderStroke(
+                    width = 0.5.dp,
+                    color = if (uiState.isDarkMode) Slate800 else Slate200
+                ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -202,7 +215,7 @@ fun DevMarketApp(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF0F172A))
+                                .background(if (uiState.isDarkMode) Color(0xFF0F172A) else Color(0xFFF1F5F9))
                                 .border(1.dp, Emerald500, RoundedCornerShape(8.dp)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -218,7 +231,7 @@ fun DevMarketApp(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "DevMarket",
-                                    color = Color.White,
+                                    color = if (uiState.isDarkMode) Color.White else Slate900,
                                     fontWeight = FontWeight.Black,
                                     fontSize = 16.sp
                                 )
@@ -232,22 +245,22 @@ fun DevMarketApp(
                             }
                             Text(
                                 text = "Delayed Disbursement Escrow",
-                                color = Slate400,
+                                color = if (uiState.isDarkMode) Slate400 else Slate500,
                                 fontSize = 9.sp
                             )
                         }
                     }
 
-                    // Direct Navigation Icons: Account Management, Settings, Logout
+                    // Direct Navigation Icons: Account Management, Theme Toggle, Settings, Logout
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // 1. Account Management Pill / Button
                         Surface(
-                            color = Slate800,
+                            color = if (uiState.isDarkMode) Slate800 else Color(0xFFF1F5F9),
                             shape = RoundedCornerShape(18.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (uiState.isDarkMode) Slate700 else Slate300),
                             modifier = Modifier
                                 .clickable { showAccountManagementDialog = true }
                                 .testTag("nav_account_button")
@@ -280,7 +293,7 @@ fun DevMarketApp(
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = currentUser.fullName.split(" ").first(),
-                                    color = Slate200,
+                                    color = if (uiState.isDarkMode) Slate200 else Slate800,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -288,10 +301,28 @@ fun DevMarketApp(
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
                                     contentDescription = "Account Options",
-                                    tint = Slate400,
+                                    tint = if (uiState.isDarkMode) Slate400 else Slate600,
                                     modifier = Modifier.size(15.dp)
                                 )
                             }
+                        }
+
+                        // 1.5 Quick Theme Toggle Button (Light & Dark Mode)
+                        IconButton(
+                            onClick = { viewModel.toggleDarkMode() },
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (uiState.isDarkMode) ButtonYellow.copy(alpha = 0.15f) else ButtonYellow)
+                                .border(1.dp, if (uiState.isDarkMode) ButtonYellow else ButtonYellowHover, RoundedCornerShape(8.dp))
+                                .testTag("nav_theme_toggle_button")
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = if (uiState.isDarkMode) "Switch to Light Mode" else "Switch to Dark Mode",
+                                tint = if (uiState.isDarkMode) ButtonYellow else OnButtonYellow,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
 
                         // 2. Settings Navigation Icon Button
@@ -300,14 +331,14 @@ fun DevMarketApp(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Slate800)
-                                .border(1.dp, Slate700, RoundedCornerShape(8.dp))
+                                .background(if (uiState.isDarkMode) Slate800 else Color(0xFFF1F5F9))
+                                .border(1.dp, if (uiState.isDarkMode) Slate700 else Slate300, RoundedCornerShape(8.dp))
                                 .testTag("nav_settings_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Platform Settings",
-                                tint = Slate300,
+                                tint = if (uiState.isDarkMode) Slate300 else Slate700,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -318,8 +349,8 @@ fun DevMarketApp(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Slate800)
-                                .border(1.dp, Slate700, RoundedCornerShape(8.dp))
+                                .background(if (uiState.isDarkMode) Slate800 else Color(0xFFF1F5F9))
+                                .border(1.dp, if (uiState.isDarkMode) Slate700 else Slate300, RoundedCornerShape(8.dp))
                                 .testTag("nav_logout_button")
                         ) {
                             Icon(
@@ -335,10 +366,10 @@ fun DevMarketApp(
         },
         bottomBar = {
             NavigationBar(
-                containerColor = Slate900,
+                containerColor = if (uiState.isDarkMode) Slate900 else Color.White,
                 tonalElevation = 0.dp,
                 modifier = Modifier
-                    .border(width = 0.5.dp, color = Slate800)
+                    .border(width = 0.5.dp, color = if (uiState.isDarkMode) Slate800 else Slate200)
                     .testTag("bottom_nav_bar")
             ) {
                 // 1. Projects Dashboard tab (Always visible to all authenticated users)
@@ -483,6 +514,7 @@ fun DevMarketApp(
                     activeRole = uiState.activeRole,
                     selectedProjectId = uiState.selectedProjectId,
                     feeCalculationMilestone = uiState.feeCalculationPopoverMilestone,
+                    messages = communicationMessages,
                     onSelectProject = { viewModel.selectProject(it) },
                     onFundMilestone = { viewModel.showFundingDialog(it) },
                     onReleaseMilestone = { viewModel.showReleaseDialog(it) },
@@ -491,6 +523,9 @@ fun DevMarketApp(
                     onSubmitDeliverable = { viewModel.showDeliverableDialog(it) },
                     onToggleFeeCalculation = { viewModel.toggleFeeCalculationPopover(it) },
                     onNewProject = { viewModel.showNewProjectDialog() },
+                    onOpenCommunicationPortal = { viewModel.openCommunicationPortal(it) },
+                    onSendMessage = { text -> viewModel.sendPublicCommunicationMessage(uiState.selectedProjectId ?: "proj_1", text) },
+                    onOpenPayPalDetails = { viewModel.showPayPalDetailsDialog() },
                     onOpenSettings = { viewModel.showSettingsDialog() },
                     onOpenAccountManagement = { showAccountManagementDialog = true },
                     onLogout = { showLogoutConfirmDialog = true }
@@ -676,11 +711,38 @@ fun DevMarketApp(
                 )
             }
 
+            // 1-on-1 Communication Portal Dialog
+            if (uiState.isCommunicationPortalOpen) {
+                val portalProject = projects.firstOrNull { it.id == activePortalProjectId }
+                CommunicationPortalDialog(
+                    project = portalProject,
+                    messages = communicationMessages,
+                    currentUser = currentUser,
+                    onSendMessage = { text ->
+                        viewModel.sendPublicCommunicationMessage(portalProject?.id ?: "proj_1", text)
+                    },
+                    onDismiss = { viewModel.closeCommunicationPortal() }
+                )
+            }
+
+            // PayPal Details & Setup Dialog
+            if (uiState.isPayPalDetailsDialogOpen) {
+                PayPalDetailsDialog(
+                    currentUser = currentUser,
+                    onSaveDetails = { email, merchantId, isConnected ->
+                        viewModel.savePayPalDetails(email, merchantId, isConnected)
+                    },
+                    onDismiss = { viewModel.dismissPayPalDetailsDialog() }
+                )
+            }
+
             // Platform Settings Modal
             if (uiState.isSettingsDialogOpen && currentUser != null) {
                 SettingsPanelModal(
                     currentUser = currentUser,
                     supabaseUrl = viewModel.getSupabaseUrl(),
+                    isDarkMode = uiState.isDarkMode,
+                    onToggleDarkMode = { viewModel.toggleDarkMode() },
                     onClose = { viewModel.dismissSettingsDialog() },
                     onOpenPrivacyPolicy = { viewModel.showLegalDialog(DocumentType.PRIVACY_POLICY) },
                     onOpenEscrowAgreement = { viewModel.showLegalDialog(DocumentType.ESCROW_AGREEMENT) },

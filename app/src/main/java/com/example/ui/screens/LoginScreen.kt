@@ -66,8 +66,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.Amber500
+import com.example.ui.theme.ButtonYellow
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.Emerald600
+import com.example.ui.theme.OnButtonYellow
 import com.example.ui.theme.PayPalBlue
 import com.example.ui.theme.PayPalSky
 import com.example.ui.theme.Rose500
@@ -196,7 +198,7 @@ fun LoginScreen(
                         indicator = { tabPositions ->
                             TabRowDefaults.SecondaryIndicator(
                                 Modifier.tabIndicatorOffset(tabPositions[selectedAuthMode]),
-                                color = if (selectedAuthMode == 0) Emerald500 else PayPalSky,
+                                color = ButtonYellow,
                                 height = 3.dp
                             )
                         },
@@ -718,7 +720,7 @@ fun LoginScreen(
                             .height(48.dp)
                             .testTag(if (selectedAuthMode == 0) "login_submit_button" else "signup_submit_button"),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedAuthMode == 0) Emerald600 else PayPalBlue,
+                            containerColor = ButtonYellow,
                             disabledContainerColor = Slate800
                         ),
                         shape = RoundedCornerShape(10.dp)
@@ -726,7 +728,7 @@ fun LoginScreen(
                         if (isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                color = Color.White,
+                                color = OnButtonYellow,
                                 strokeWidth = 2.dp
                             )
                         } else {
@@ -734,7 +736,7 @@ fun LoginScreen(
                                 text = if (selectedAuthMode == 0) "Sign In to Account" else "Create DevMarket Account",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                color = Color.White
+                                color = OnButtonYellow
                             )
                         }
                     }

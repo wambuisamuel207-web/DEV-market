@@ -21,7 +21,9 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
@@ -57,8 +59,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.User
 import com.example.ui.theme.Amber500
+import com.example.ui.theme.ButtonYellow
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.Emerald600
+import com.example.ui.theme.OnButtonYellow
 import com.example.ui.theme.PayPalBlue
 import com.example.ui.theme.PayPalSky
 import com.example.ui.theme.Rose500
@@ -75,6 +79,8 @@ import com.example.ui.theme.Slate950
 fun SettingsPanelModal(
     currentUser: User,
     supabaseUrl: String,
+    isDarkMode: Boolean = true,
+    onToggleDarkMode: () -> Unit = {},
     onClose: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenEscrowAgreement: () -> Unit,
@@ -144,6 +150,67 @@ fun SettingsPanelModal(
 
                     IconButton(onClick = onClose, modifier = Modifier.testTag("close_settings_button")) {
                         Icon(Icons.Default.Close, contentDescription = "Close", tint = Slate400)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Theme Mode Switcher Card (Light & Dark Mode)
+                Text(
+                    text = "THEME & DISPLAY MODE",
+                    color = Slate400,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Surface(
+                    color = Slate950,
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                contentDescription = null,
+                                tint = ButtonYellow,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isDarkMode) "Dark Mode (Enabled)" else "Light Mode (Enabled)",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (isDarkMode) "High-trust dark slate appearance" else "Crisp high-contrast light appearance",
+                                    color = Slate400,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = { onToggleDarkMode() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = OnButtonYellow,
+                                checkedTrackColor = ButtonYellow,
+                                uncheckedThumbColor = Slate400,
+                                uncheckedTrackColor = Slate700
+                            ),
+                            modifier = Modifier.testTag("settings_theme_switch")
+                        )
                     }
                 }
 
@@ -384,13 +451,14 @@ fun SettingsPanelModal(
 
                 Button(
                     onClick = onClose,
-                    colors = ButtonDefaults.buttonColors(containerColor = Slate800),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
+                        .testTag("close_settings_button")
                 ) {
-                    Text("Close Settings", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("Close Settings", color = OnButtonYellow, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
         }

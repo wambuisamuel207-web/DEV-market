@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,12 +42,15 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MyApplicationTheme {
+            val viewModel: DevMarketViewModel = viewModel(factory = factory)
+            val uiState = viewModel.uiState.value
+            val isDark = viewModel.uiState.collectAsState()
+
+            MyApplicationTheme(darkTheme = isDark.value.isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Slate950
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    val viewModel: DevMarketViewModel = viewModel(factory = factory)
                     DevMarketApp(viewModel = viewModel)
                 }
             }

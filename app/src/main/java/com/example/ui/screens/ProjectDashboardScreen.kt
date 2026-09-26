@@ -24,22 +24,27 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LinearScale
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
@@ -71,6 +76,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.DisputeMessage
 import com.example.data.model.Milestone
 import com.example.data.model.Project
 import com.example.data.model.User
@@ -78,11 +84,14 @@ import com.example.ui.components.EscrowTrustNotice
 import com.example.ui.components.FeeSplitCard
 import com.example.ui.components.MilestonePipelineVisualizer
 import com.example.ui.components.MilestoneStatusBadge
+import com.example.ui.components.RechartsMilestonePieBreakdownCard
 import com.example.ui.theme.Amber500
 import com.example.ui.theme.Amber600
+import com.example.ui.theme.ButtonYellow
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.Emerald600
 import com.example.ui.theme.Emerald700
+import com.example.ui.theme.OnButtonYellow
 import com.example.ui.theme.PayPalBlue
 import com.example.ui.theme.PayPalSky
 import com.example.ui.theme.Rose500
@@ -106,6 +115,13 @@ enum class MilestoneFilter(val label: String) {
     DISPUTED("Disputed")
 }
 
+enum class DashboardPanel(val label: String, val shortLabel: String) {
+    WORK_SHOWCASE("Work Showcase & Review", "Work & Review"),
+    COMMUNICATION("1-on-1 Chat Portal", "1-on-1 Chat"),
+    ESCROW_PANEL("Escrow & Approvals", "Escrow"),
+    ALL_MILESTONES("Milestone Tracker", "Milestones")
+}
+
 @Composable
 fun ProjectDashboardScreen(
     projects: List<Project>,
@@ -115,6 +131,7 @@ fun ProjectDashboardScreen(
     activeRole: UserRole,
     selectedProjectId: String?,
     feeCalculationMilestone: Milestone?,
+    messages: List<DisputeMessage> = emptyList(),
     onSelectProject: (String?) -> Unit,
     onFundMilestone: (Milestone) -> Unit,
     onReleaseMilestone: (Milestone) -> Unit,
@@ -123,11 +140,15 @@ fun ProjectDashboardScreen(
     onSubmitDeliverable: (Milestone) -> Unit,
     onToggleFeeCalculation: (Milestone?) -> Unit,
     onNewProject: () -> Unit,
+    onOpenCommunicationPortal: (String?) -> Unit = {},
+    onSendMessage: (String) -> Unit = {},
+    onOpenPayPalDetails: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onOpenAccountManagement: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var activePanel by remember { mutableStateOf(DashboardPanel.WORK_SHOWCASE) }
     var activeFilter by remember { mutableStateOf(MilestoneFilter.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var isProjectDetailsExpanded by remember { mutableStateOf(false) }
@@ -267,14 +288,14 @@ fun ProjectDashboardScreen(
                     if (currentUser.role == "client" || currentUser.role == "admin") {
                         Button(
                             onClick = onNewProject,
-                            colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                            colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                             shape = RoundedCornerShape(8.dp),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier.testTag("dashboard_new_project_button")
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Add, contentDescription = null, tint = OnButtonYellow, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("New", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("New", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = OnButtonYellow)
                         }
                     }
                 }
@@ -523,6 +544,17 @@ fun ProjectDashboardScreen(
             }
         }
 
+        // Recharts Visual Breakdown of Project Milestones & Escrow Distribution (when viewing all milestones)
+        if (activePanel == DashboardPanel.ALL_MILESTONES) {
+            item {
+                RechartsMilestonePieBreakdownCard(
+                    milestones = projectFilteredMilestones,
+                    projectTitle = activeProject?.title,
+                    modifier = Modifier.testTag("recharts_milestone_pie_chart")
+                )
+            }
+        }
+
         // Project Filter Selector Chips
         item {
             Column {
@@ -676,198 +708,317 @@ fun ProjectDashboardScreen(
             }
         }
 
-        // Milestone Status Filter Tabs & Search Field
+        // Dedicated 3-Panel Segmented Navigation Bar
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Search Field
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search milestones by title or keyword...", color = Slate500, fontSize = 12.sp) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = Slate400, modifier = Modifier.size(16.dp))
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear", tint = Slate400, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedContainerColor = Slate900,
-                        unfocusedContainerColor = Slate900,
-                        focusedBorderColor = Emerald500,
-                        unfocusedBorderColor = Slate800
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("milestone_search_field")
-                )
-
-                // Status Chips
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    MilestoneFilter.values().forEach { filter ->
-                        val isSelected = activeFilter == filter
-                        val count = when (filter) {
-                            MilestoneFilter.ALL -> projectFilteredMilestones.size
-                            MilestoneFilter.ESCROW_HELD -> projectFilteredMilestones.count { it.status == "escrow_funded" }
-                            MilestoneFilter.UNDER_REVIEW -> projectFilteredMilestones.count { it.status == "under_review" }
-                            MilestoneFilter.UNFUNDED -> projectFilteredMilestones.count { it.status == "unfunded" }
-                            MilestoneFilter.RELEASED -> projectFilteredMilestones.count { it.status == "released" }
-                            MilestoneFilter.DISPUTED -> projectFilteredMilestones.count { it.status == "disputed" }
-                        }
-
-                        Surface(
-                            color = if (isSelected) Slate800 else Slate900,
-                            shape = RoundedCornerShape(16.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isSelected) {
-                                    when (filter) {
-                                        MilestoneFilter.ESCROW_HELD -> Emerald500
-                                        MilestoneFilter.UNDER_REVIEW -> Amber500
-                                        MilestoneFilter.RELEASED -> PayPalSky
-                                        MilestoneFilter.DISPUTED -> Rose500
-                                        else -> Slate600
-                                    }
-                                } else Slate800
-                            ),
-                            modifier = Modifier
-                                .clickable { activeFilter = filter }
-                                .testTag("status_filter_${filter.name.lowercase()}")
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            when (filter) {
-                                                MilestoneFilter.ALL -> Slate400
-                                                MilestoneFilter.ESCROW_HELD -> Emerald500
-                                                MilestoneFilter.UNDER_REVIEW -> Amber500
-                                                MilestoneFilter.UNFUNDED -> Slate500
-                                                MilestoneFilter.RELEASED -> Color(0xFF0284C7)
-                                                MilestoneFilter.DISPUTED -> Rose500
-                                            }
-                                        )
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "${filter.label} ($count)",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else Slate400
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section Title: Active Milestones List
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                color = Slate900,
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Milestones Pipeline (${displayedMilestones.size})",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
-                )
-                Text(
-                    text = "Sorted by order",
-                    color = Slate500,
-                    fontSize = 11.sp
-                )
-            }
-        }
-
-        // Clean Milestones List
-        if (displayedMilestones.isEmpty()) {
-            item {
-                Surface(
-                    color = Slate900,
-                    shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text(
+                        text = "WORKSPACE PANELS",
+                        color = Slate400,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.FilterList,
-                            contentDescription = null,
-                            tint = Slate500,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "No milestones found",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Try adjusting your search query or selecting a different status filter.",
-                            color = Slate400,
-                            fontSize = 11.sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Button(
-                            onClick = {
-                                activeFilter = MilestoneFilter.ALL
-                                searchQuery = ""
-                                onSelectProject(null)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Slate800),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Reset All Filters", color = Color.White, fontSize = 12.sp)
+                        DashboardPanel.values().forEach { panel ->
+                            val isSelected = activePanel == panel
+                            Surface(
+                                color = if (isSelected) {
+                                    when (panel) {
+                                        DashboardPanel.WORK_SHOWCASE -> Color(0xFF0284C7)
+                                        DashboardPanel.COMMUNICATION -> Emerald600
+                                        DashboardPanel.ESCROW_PANEL -> PayPalBlue
+                                        DashboardPanel.ALL_MILESTONES -> Slate800
+                                    }
+                                } else Slate950,
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isSelected) Color.White.copy(alpha = 0.35f) else Slate800
+                                ),
+                                modifier = Modifier
+                                    .clickable { activePanel = panel }
+                                    .testTag("dashboard_panel_tab_${panel.name.lowercase()}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = when (panel) {
+                                            DashboardPanel.WORK_SHOWCASE -> Icons.Default.Code
+                                            DashboardPanel.COMMUNICATION -> Icons.Default.Forum
+                                            DashboardPanel.ESCROW_PANEL -> Icons.Default.AccountBalanceWallet
+                                            DashboardPanel.ALL_MILESTONES -> Icons.Default.FilterList
+                                        },
+                                        contentDescription = null,
+                                        tint = if (isSelected) Color.White else Slate400,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = panel.label,
+                                        color = if (isSelected) Color.White else Slate300,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
-        } else {
-            items(displayedMilestones, key = { it.id }) { milestone ->
-                val project = projects.firstOrNull { it.id == milestone.projectId }
-                val isFeePopoverOpen = feeCalculationMilestone?.id == milestone.id
+        }
 
-                ProjectMilestoneListItem(
-                    milestone = milestone,
-                    projectTitle = project?.title ?: "Contract Project",
-                    currentUserRole = currentUser.role,
-                    activeRole = activeRole,
-                    isFeePopoverOpen = isFeePopoverOpen,
-                    onToggleFeeCalculation = { onToggleFeeCalculation(if (isFeePopoverOpen) null else milestone) },
-                    onFund = { onFundMilestone(milestone) },
-                    onRelease = { onReleaseMilestone(milestone) },
-                    onRequestRevision = { onRequestRevision(milestone) },
-                    onDispute = { onOpenDispute(milestone) },
-                    onSubmitDeliverable = { onSubmitDeliverable(milestone) }
+        // PANEL 1: WORK SHOWCASE & REVIEW
+        if (activePanel == DashboardPanel.WORK_SHOWCASE) {
+            item {
+                WorkShowcasePanel(
+                    project = activeProject,
+                    milestones = projectFilteredMilestones,
+                    currentUser = currentUser,
+                    onSubmitDeliverable = onSubmitDeliverable,
+                    onApproveDeliverable = onReleaseMilestone,
+                    onRequestRevision = onRequestRevision,
+                    onOpenDispute = onOpenDispute,
+                    onContactParty = { onOpenCommunicationPortal(selectedProjectId) }
                 )
+            }
+        }
+
+        // PANEL 2: 1-ON-1 COMMUNICATION & PUBLIC PORTAL
+        if (activePanel == DashboardPanel.COMMUNICATION) {
+            item {
+                CommunicationPortalPanel(
+                    project = activeProject,
+                    messages = messages,
+                    currentUser = currentUser,
+                    onOpenDedicatedPortal = { onOpenCommunicationPortal(selectedProjectId) },
+                    onSendMessage = onSendMessage
+                )
+            }
+        }
+
+        // PANEL 3: ESCROW PANEL (BOTH SEE, ONLY CLIENT APPROVES)
+        if (activePanel == DashboardPanel.ESCROW_PANEL) {
+            item {
+                EscrowPanel(
+                    project = activeProject,
+                    milestones = projectFilteredMilestones,
+                    currentUser = currentUser,
+                    onFundMilestone = onFundMilestone,
+                    onApproveReleaseMilestone = onReleaseMilestone,
+                    onOpenPayPalDetails = onOpenPayPalDetails
+                )
+            }
+        }
+
+        // PANEL 4: ALL MILESTONES PIPELINE TRACKER
+        if (activePanel == DashboardPanel.ALL_MILESTONES) {
+            // Milestone Status Filter Tabs & Search Field
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Search Field
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search milestones by title or keyword...", color = Slate500, fontSize = 12.sp) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Slate400, modifier = Modifier.size(16.dp))
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = Slate400, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Slate900,
+                            unfocusedContainerColor = Slate900,
+                            focusedBorderColor = Emerald500,
+                            unfocusedBorderColor = Slate800
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("milestone_search_field")
+                    )
+
+                    // Status Chips
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        MilestoneFilter.values().forEach { filter ->
+                            val isSelected = activeFilter == filter
+                            val count = when (filter) {
+                                MilestoneFilter.ALL -> projectFilteredMilestones.size
+                                MilestoneFilter.ESCROW_HELD -> projectFilteredMilestones.count { it.status == "escrow_funded" }
+                                MilestoneFilter.UNDER_REVIEW -> projectFilteredMilestones.count { it.status == "under_review" }
+                                MilestoneFilter.UNFUNDED -> projectFilteredMilestones.count { it.status == "unfunded" }
+                                MilestoneFilter.RELEASED -> projectFilteredMilestones.count { it.status == "released" }
+                                MilestoneFilter.DISPUTED -> projectFilteredMilestones.count { it.status == "disputed" }
+                            }
+
+                            Surface(
+                                color = if (isSelected) Slate800 else Slate900,
+                                shape = RoundedCornerShape(16.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isSelected) {
+                                        when (filter) {
+                                            MilestoneFilter.ESCROW_HELD -> Emerald500
+                                            MilestoneFilter.UNDER_REVIEW -> Amber500
+                                            MilestoneFilter.RELEASED -> PayPalSky
+                                            MilestoneFilter.DISPUTED -> Rose500
+                                            else -> Slate600
+                                        }
+                                    } else Slate800
+                                ),
+                                modifier = Modifier
+                                    .clickable { activeFilter = filter }
+                                    .testTag("status_filter_${filter.name.lowercase()}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                when (filter) {
+                                                    MilestoneFilter.ALL -> Slate400
+                                                    MilestoneFilter.ESCROW_HELD -> Emerald500
+                                                    MilestoneFilter.UNDER_REVIEW -> Amber500
+                                                    MilestoneFilter.UNFUNDED -> Slate500
+                                                    MilestoneFilter.RELEASED -> Color(0xFF0284C7)
+                                                    MilestoneFilter.DISPUTED -> Rose500
+                                                }
+                                            )
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "${filter.label} ($count)",
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else Slate400
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Section Title: Active Milestones List
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Milestones Pipeline (${displayedMilestones.size})",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Sorted by order",
+                        color = Slate500,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            // Clean Milestones List
+            if (displayedMilestones.isEmpty()) {
+                item {
+                    Surface(
+                        color = Slate900,
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate800),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = null,
+                                tint = Slate500,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "No milestones found",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Try adjusting your search query or selecting a different status filter.",
+                                color = Slate400,
+                                fontSize = 11.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    activeFilter = MilestoneFilter.ALL
+                                    searchQuery = ""
+                                    onSelectProject(null)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Slate800),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Reset All Filters", color = Color.White, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            } else {
+                items(displayedMilestones, key = { it.id }) { milestone ->
+                    val project = projects.firstOrNull { it.id == milestone.projectId }
+                    val isFeePopoverOpen = feeCalculationMilestone?.id == milestone.id
+
+                    ProjectMilestoneListItem(
+                        milestone = milestone,
+                        projectTitle = project?.title ?: "Contract Project",
+                        currentUserRole = currentUser.role,
+                        activeRole = activeRole,
+                        isFeePopoverOpen = isFeePopoverOpen,
+                        onToggleFeeCalculation = { onToggleFeeCalculation(if (isFeePopoverOpen) null else milestone) },
+                        onFund = { onFundMilestone(milestone) },
+                        onRelease = { onReleaseMilestone(milestone) },
+                        onRequestRevision = { onRequestRevision(milestone) },
+                        onDispute = { onOpenDispute(milestone) },
+                        onSubmitDeliverable = { onSubmitDeliverable(milestone) }
+                    )
+                }
             }
         }
 
@@ -1120,15 +1271,15 @@ fun ProjectMilestoneListItem(
                         "unfunded" -> {
                             Button(
                                 onClick = onFund,
-                                colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                                colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("fund_button_${milestone.id}")
                             ) {
-                                Icon(Icons.Default.Payment, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Payment, contentDescription = null, tint = OnButtonYellow, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Fund Escrow via PayPal (\$${milestone.amount.toInt()})", fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Fund Escrow via PayPal (\$${milestone.amount.toInt()})", fontWeight = FontWeight.Bold, color = OnButtonYellow)
                             }
                         }
 
@@ -1158,15 +1309,15 @@ fun ProjectMilestoneListItem(
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = onRelease,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("release_button_${milestone.id}")
                                 ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = OnButtonYellow, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Approve Deliverables & Release Payout", fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text("Approve Deliverables & Release Payout", fontWeight = FontWeight.Bold, color = OnButtonYellow)
                                 }
 
                                 Row(
@@ -1269,15 +1420,15 @@ fun ProjectMilestoneListItem(
                         "escrow_funded" -> {
                             Button(
                                 onClick = onSubmitDeliverable,
-                                colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                                colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = OnButtonYellow),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("submit_deliverable_button_${milestone.id}")
                             ) {
-                                Icon(Icons.Default.Upload, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Upload, contentDescription = null, tint = OnButtonYellow, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Submit Deliverables for Review", fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Submit Deliverables for Review", fontWeight = FontWeight.Bold, color = OnButtonYellow)
                             }
                         }
 

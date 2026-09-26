@@ -73,10 +73,14 @@ data class DevMarketUiState(
     val resolvingMilestone: Milestone? = null,
     val isNewProjectDialogOpen: Boolean = false,
     val isPayPalOnboardingDialogOpen: Boolean = false,
+    val isPayPalDetailsDialogOpen: Boolean = false,
+    val isCommunicationPortalOpen: Boolean = false,
+    val communicationPortalProjectId: String? = null,
     val feeCalculationPopoverMilestone: Milestone? = null,
     val isSettingsDialogOpen: Boolean = false,
     val isLegalDialogOpen: Boolean = false,
-    val activeLegalDocType: DocumentType = DocumentType.PRIVACY_POLICY
+    val activeLegalDocType: DocumentType = DocumentType.PRIVACY_POLICY,
+    val isDarkMode: Boolean = true
 )
 
 class DevMarketViewModel(
@@ -572,6 +576,78 @@ class DevMarketViewModel(
         _uiState.value = _uiState.value.copy(isPayPalOnboardingDialogOpen = false)
     }
 
+    fun showPayPalDetailsDialog() {
+        _uiState.value = _uiState.value.copy(isPayPalDetailsDialogOpen = true)
+    }
+
+    fun dismissPayPalDetailsDialog() {
+        _uiState.value = _uiState.value.copy(isPayPalDetailsDialogOpen = false)
+    }
+
+    fun savePayPalDetails(email: String, merchantId: String, isConnected: Boolean) {
+        viewModelScope.launch {
+            val user = _uiState.value.currentUser ?: return@launch
+            repository.updateUserPayPalDetails(user.id, email, merchantId, isConnected)
+            _uiState.value = _uiState.value.copy(
+                currentUser = user.copy(
+                    email = email.trim(),
+                    paypalMerchantId = merchantId.trim(),
+                    paypalConnected = isConnected
+                ),
+                isPayPalDetailsDialogOpen = false
+            )
+            if (isConnected) {
+                _toastMessage.emit("PayPal Account linked: $email (Merchant ID: $merchantId)")
+            } else {
+                _toastMessage.emit("PayPal details updated.")
+            }
+        }
+    }
+
+    fun openCommunicationPortal(projectId: String?) {
+        _uiState.value = _uiState.value.copy(
+            isCommunicationPortalOpen = true,
+            communicationPortalProjectId = projectId ?: _uiState.value.selectedProjectId ?: "proj_1"
+        )
+    }
+
+    fun closeCommunicationPortal() {
+        _uiState.value = _uiState.value.copy(
+            isCommunicationPortalOpen = false,
+            communicationPortalProjectId = null
+        )
+    }
+
+    fun sendPublicCommunicationMessage(projectId: String, messageText: String) {
+        if (messageText.isBlank()) return
+        viewModelScope.launch {
+            val role = _uiState.value.activeRole
+            val currentUser = _uiState.value.currentUser
+            val senderId = currentUser?.id ?: when (role) {
+                UserRole.CLIENT -> "usr_client_1"
+                UserRole.DEVELOPER -> "usr_dev_1"
+                UserRole.ADMIN -> "usr_admin_1"
+            }
+            val senderName = currentUser?.fullName ?: when (role) {
+                UserRole.CLIENT -> "Sarah Jenkins (Client)"
+                UserRole.DEVELOPER -> "Alex Rivera (Developer)"
+                UserRole.ADMIN -> "Admin Mediator"
+            }
+            val senderRoleStr = when (role) {
+                UserRole.CLIENT -> "client"
+                UserRole.DEVELOPER -> "developer"
+                UserRole.ADMIN -> "admin"
+            }
+            repository.sendDisputeMessage(
+                projectId = projectId,
+                senderId = senderId,
+                senderName = senderName,
+                senderRole = senderRoleStr,
+                message = messageText.trim()
+            )
+        }
+    }
+
     fun togglePayPalConnection(connect: Boolean) {
         viewModelScope.launch {
             val merchantId = if (connect) "PMR-DEV-${System.currentTimeMillis().toString().takeLast(5)}" else null
@@ -637,6 +713,18 @@ class DevMarketViewModel(
                 _toastMessage.emit("Sync failed. Check Supabase connection in settings.")
             }
         }
+    }
+
+    fun toggleDarkMode() {
+        val newMode = !_uiState.value.isDarkMode
+        _uiState.value = _uiState.value.copy(isDarkMode = newMode)
+        viewModelScope.launch {
+            _toastMessage.emit(if (newMode) "Switched to Dark Mode" else "Switched to Light Mode")
+        }
+    }
+
+    fun setDarkMode(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isDarkMode = enabled)
     }
 
     fun showSettingsDialog() {
